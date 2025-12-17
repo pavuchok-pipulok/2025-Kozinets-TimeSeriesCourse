@@ -8,10 +8,11 @@ import plotly.graph_objs as go
 import plotly.express as px
 plotly.offline.init_notebook_mode(connected=True)
 
-from modules.mp import *
+from modules.mp import compute_mp
 
 
-def heads_tails(consumptions: dict, cutoff, house_idx: list) -> dict, dict:
+def heads_tails(consumptions: dict, cutoff, house_idx: list) -> tuple[dict, dict]:
+
     """
     Split time series into two parts: Head and Tail
 
@@ -36,29 +37,55 @@ def heads_tails(consumptions: dict, cutoff, house_idx: list) -> dict, dict:
     return heads, tails
 
 
-def meter_swapping_detection(heads: dict, tails: dict, house_idx: dict, m: int) -> dict:
+def meter_swapping_detection(heads: dict, tails: dict, house_idx: list, m: int) -> dict:
     """
     Find the swapped time series pair
 
     Parameters
     ---------
-    heads: heads of time series
-    tails: tails of time series
-    house_idx: indices of houses
+    heads: dict of Head parts of time series
+    tails: dict of Tail parts of time series
+    house_idx: list of house indices
     m: subsequence length
 
     Returns
     --------
-    min_score: time series pair with minimum swap-score
+    min_score: dict with keys 'pair' and 'score' of time series with minimum swap-score
     """
 
     eps = 0.001
+    min_score = {'pair': None, 'score': np.inf}
 
-    min_score = {}
+    # преобразуем все серии в 1D float массивы заранее
+    head_arrays = {i: heads[f'H_{i}'].to_numpy().ravel().astype(np.float64) for i in house_idx}
+    tail_arrays = {i: tails[f'T_{i}'].to_numpy().ravel().astype(np.float64) for i in house_idx}
 
-    # INSERT YOUR CODE
-    
+    for i in house_idx:
+        head_i = head_arrays[i]
+        tail_i = tail_arrays[i]
+
+        # минимальное расстояние правильной пары
+        mp_self = compute_mp(head_i, m, ts2=tail_i)['mp']
+        min_self = np.min(mp_self)
+
+        for j in house_idx:
+            if i == j:
+                continue
+
+            tail_j = tail_arrays[j]
+
+            # матричный профиль между head_i и tail_j
+            mp_cross = compute_mp(head_i, m, ts2=tail_j)['mp']
+            min_cross = np.min(mp_cross)
+
+            swap_score = min_cross / (min_self + eps)
+
+            if swap_score < min_score['score']:
+                min_score['score'] = swap_score
+                min_score['pair'] = (i, j)
+
     return min_score
+
 
 
 def plot_consumptions_ts(consumptions: dict, cutoff, house_idx: list):
@@ -109,4 +136,4 @@ def plot_consumptions_ts(consumptions: dict, cutoff, house_idx: list):
                       legend=dict(font=dict(size=20, color='black'))
                       )
 
-    fig.show(renderer="colab")
+    fig.show()

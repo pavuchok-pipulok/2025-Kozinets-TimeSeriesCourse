@@ -99,10 +99,10 @@ def _run_experiment_best_match(algorithm: str, data: dict, exp_params: dict, alg
             for m in m_list:
                 match algorithm:
                     case 'naive':
-                        naive_bestmatch_model = NaiveBestMatchFinder(alg_params['excl_zone_frac'], alg_params['topK'], alg_params['normalize'], r)
+                        naive_bestmatch_model = NaiveBestMatchFinder(alg_params['excl_zone_frac'], alg_params['topK'], alg_params['is_normalize'], r)
                         runtime_code = f"naive_bestmatch_model.perform(data['ts']['{n}'], data['query']['{m}'])"
                     case 'ucr-dtw':
-                        ucr_dtw_bestmatch_model = UCR_DTW(alg_params['excl_zone_frac'], alg_params['topK'], alg_params['normalize'], r)
+                        ucr_dtw_bestmatch_model = UCR_DTW(alg_params['excl_zone_frac'], alg_params['topK'], alg_params['is_normalize'], r)
                         runtime_code = f"ucr_dtw_bestmatch_model.perform(data['ts']['{n}'], data['query']['{m}'])"
 
                 try:
